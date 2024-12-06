@@ -43,8 +43,11 @@ public class GamePageController implements Initializable {
     private double velocityY = 0;    
     private final double damping = 0.95;
     private Timeline gameLoop;
+    private Timeline generateMusuh;
+    private List<Musuh> enemies = new ArrayList<>();
     private boolean gameOver = false;
     private Label tapToPlayLabel;
+    
     
 
     /**
@@ -110,6 +113,59 @@ public class GamePageController implements Initializable {
         
         velocityX *= damping;
         velocityY *= damping;
+
+        checkCollisions();
+        
+        enemies.removeIf(musuh -> musuh.isOffScreen());
+    }
+
+    private void checkCollisions() {
+    for (Musuh musuh : new ArrayList<>(enemies)) {
+        if (musuh.getGambar().getBoundsInParent().intersects(player.getBoundsInParent())) {
+            musuh.hapusMusuh(); 
+            enemies.remove(musuh);
+            
+            ruang.getChildren().remove(player); 
+            
+            gameOver(); 
+            break; 
+        }
+    }
+    
+}
+
+    private void startGenerateMusuh() {
+        generateMusuh = new Timeline(new KeyFrame(Duration.seconds(2), e -> aktivasiMusuh()));
+        generateMusuh.setCycleCount(Timeline.INDEFINITE);
+        generateMusuh.play();
+    }
+    
+    private void aktivasiMusuh() {
+        if (gameOver) return;
+    
+        boolean moveRight = new Random().nextBoolean();
+
+        Musuh predator = new Musuh(ruang, moveRight);
+        enemies.add(predator);
+    }
+    
+    private void gameOver() {
+        gameOver = true;
+        gameLoop.stop();
+        generateMusuh.stop();
+        
+        Font hoboFont = Font.loadFont(getClass().getResourceAsStream("/resource/HoboStd.otf"), 55);
+        Label gameOverLabel = new Label("Game Over");
+        gameOverLabel.setFont(hoboFont);
+        gameOverLabel.setStyle("-fx-font-size: 36px; "
+            + "-fx-text-fill: #F95454; " 
+            + "-fx-font-weight: bold; " 
+            + "-fx-effect: dropshadow(gaussian, #333333, 10, 0.8, 2, 2);"); 
+        gameOverLabel.setLayoutX(ruang.getWidth() / 2 - 100); 
+        gameOverLabel.setLayoutY(ruang.getHeight() / 2 - 50);
+
+        ruang.getChildren().add(gameOverLabel);
+
     }
 
     private void lepas(KeyEvent event) {
@@ -148,6 +204,7 @@ public class GamePageController implements Initializable {
     private void aktivasi(MouseEvent event) {
         ruang.requestFocus();
         ruang.getChildren().remove(tapToPlayLabel);
+        startGenerateMusuh();
     }
     
 }
