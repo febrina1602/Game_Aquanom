@@ -166,7 +166,62 @@ public class GamePageController implements Initializable {
 
         ruang.getChildren().add(gameOverLabel);
 
+        Button restartButton = new Button("Restart");
+        restartButton.setPrefWidth(90);  
+        restartButton.setPrefHeight(15);  
+        restartButton.setLayoutX(ruang.getWidth() / 2 - 50);
+        restartButton.setLayoutY(ruang.getHeight() / 2 + 80);
+        restartButton.setOnAction(e -> restartGame());
+        restartButton.setStyle(
+        "-fx-background-color: #80ceff; "  
+        + "-fx-text-fill: #0003ff; "  
+        + "-fx-background-radius: 10; "  
+        + "-fx-font-size: 16px; "  
+        + "-fx-font-weight: bold;"  
+        );
+
+        restartButton.setOnMouseEntered(e -> 
+            restartButton.setStyle(
+                "-fx-background-color: #69b7ff; "  
+                + "-fx-text-fill: #0003ff; "
+                + "-fx-background-radius: 10; "
+                + "-fx-font-size: 16px; "
+                + "-fx-font-weight: bold;"
+            )
+        );
+        restartButton.setOnMouseExited(e -> 
+            restartButton.setStyle(
+                "-fx-background-color: #80ceff; "  
+                + "-fx-text-fill: #0003ff; "
+                + "-fx-background-radius: 10; "
+                + "-fx-font-size: 16px; "
+                + "-fx-font-weight: bold;"
+            )
+        );
+
+        ruang.getChildren().add(restartButton);
     }
+
+    private void restartGame() {
+    try {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("HomePage.fxml"));
+        Parent homePage = loader.load();
+        Stage stage = (Stage) ruang.getScene().getWindow();
+        Scene scene = new Scene(homePage);
+        stage.setScene(scene);  
+
+        stage.show();
+
+        enemies.clear(); 
+        player.setLayoutX(100); 
+        player.setLayoutY(ruang.getHeight() / 2);
+
+        startGameLoop();
+        startGenerateMusuh();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
 
     private void lepas(KeyEvent event) {
         switch (event.getCode()) {
