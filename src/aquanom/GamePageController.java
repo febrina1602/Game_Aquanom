@@ -6,9 +6,14 @@ package aquanom;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.ResourceBundle;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -22,6 +27,7 @@ import static javafx.scene.input.KeyCode.UP;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -38,13 +44,20 @@ public class GamePageController implements Initializable {
     private ImageView player;
     @FXML
     private ImageView background;
-   
+    @FXML
+    private Label playerPoinLabel; 
+    @FXML
+    private Label scoreLabel; 
+
+    private int playerPoin = 10; 
     private double velocityX = 0;
     private double velocityY = 0;    
     private final double damping = 0.95;
     private Timeline gameLoop;
     private Timeline generateMusuh;
+    private Timeline generateMangsa;
     private List<Musuh> enemies = new ArrayList<>();
+    private List<Mangsa> preys = new ArrayList<>();
     private boolean gameOver = false;
     private Label tapToPlayLabel;
     
@@ -86,12 +99,40 @@ public class GamePageController implements Initializable {
         ruang.getChildren().add(tapToPlayLabel);
 
         tapToPlayLabel.setLayoutX(player.getLayoutX() + player.getFitWidth() / 2 - tapToPlayLabel.getWidth() / 2);
-        tapToPlayLabel.setLayoutY(player.getLayoutY() + player.getFitHeight() + 10); // Menambahkan sedikit jarak dari bawah player
+        tapToPlayLabel.setLayoutY(player.getLayoutY() + player.getFitHeight() + 10); 
 
+        tapToPlayLabel.setLayoutX(player.getLayoutX() + player.getFitWidth() / 2 - tapToPlayLabel.getWidth() / 2);
+        tapToPlayLabel.setLayoutY(player.getLayoutY() + player.getFitHeight() + 10); 
+
+        playerPoinLabel = new Label(String.valueOf(playerPoin));
+        playerPoinLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
+        ruang.getChildren().add(playerPoinLabel); 
+
+        updatePlayerPoinLabel();
+        
+        scoreLabel = new Label();
+        scoreLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
+        scoreLabel.setVisible(false); 
+        ruang.getChildren().add(scoreLabel);
         
     }
 
+    public int getPlayerPoin() {
+        return playerPoin;
+    }
 
+    public void setPlayerPoin(int playerPoin) {
+        this.playerPoin = playerPoin;
+        if (playerPoinLabel != null) {
+            playerPoinLabel.setText(String.valueOf(playerPoin));
+        }
+    }
+
+    private void updatePlayerPoinLabel() {
+        playerPoinLabel.setLayoutX(player.getLayoutX() + player.getFitWidth() / 2 - playerPoinLabel.getWidth() / 2);
+        playerPoinLabel.setLayoutY(player.getLayoutY() + player.getFitHeight() ); 
+    }
+    
     private void startGameLoop(){
         gameLoop = new Timeline(new KeyFrame(Duration.millis(16), e -> updateGame()));
         gameLoop.setCycleCount(Timeline.INDEFINITE);
@@ -113,8 +154,9 @@ public class GamePageController implements Initializable {
         
         velocityX *= damping;
         velocityY *= damping;
-
+        updatePlayerPoinLabel();
         checkCollisions();
+        
         
         enemies.removeIf(musuh -> musuh.isOffScreen());
     }
@@ -131,8 +173,35 @@ public class GamePageController implements Initializable {
             break; 
         }
     }
+
+    for (Mangsa mangsa : new ArrayList<>(preys)) {
+        if (mangsa.getGambar().getBoundsInParent().intersects(player.getBoundsInParent())) {
+            if (mangsa.getPoin() <= getPlayerPoin()) {
+                setPlayerPoin(getPlayerPoin()+ mangsa.getPoin()); 
+                playerPoinLabel.setText(" " + playerPoin); 
+                mangsa.hapusMangsa(); 
+                preys.remove(mangsa); 
+            }
+            break;
+        }
+    }
     
 }
+
+    private void startGenerateMangsa() {
+        generateMangsa = new Timeline(new KeyFrame(Duration.seconds(2), e -> aktivasiMangsa()));
+        generateMangsa.setCycleCount(Timeline.INDEFINITE);
+        generateMangsa.play();
+    }
+    
+    private void aktivasiMangsa() {
+        if (gameOver) return;
+    
+        boolean moveRight = new Random().nextBoolean();
+
+        Mangsa food = new Mangsa(ruang, moveRight);
+        preys.add(food);
+    }
 
     private void startGenerateMusuh() {
         generateMusuh = new Timeline(new KeyFrame(Duration.seconds(2), e -> aktivasiMusuh()));
@@ -166,6 +235,16 @@ public class GamePageController implements Initializable {
 
         ruang.getChildren().add(gameOverLabel);
 
+        Label scoreLabel = new Label("Score : " + playerPoin);
+        scoreLabel.setFont(hoboFont);
+        scoreLabel.setStyle("-fx-font-size: 16px; "
+            + "-fx-text-fill: #FFFFFF; " 
+            + "-fx-font-weight: bold; " 
+            + "-fx-effect: dropshadow(gaussian, #333333, 10, 0.8, 2, 2);"); 
+        scoreLabel.setLayoutX(gameOverLabel.getLayoutX());
+        scoreLabel.setLayoutY(gameOverLabel.getLayoutY() + 60);
+
+        ruang.getChildren().add(scoreLabel);
         Button restartButton = new Button("Restart");
         restartButton.setPrefWidth(90);  
         restartButton.setPrefHeight(15);  
@@ -200,6 +279,7 @@ public class GamePageController implements Initializable {
         );
 
         ruang.getChildren().add(restartButton);
+        playerPoinLabel.setVisible(false);
     }
 
     private void restartGame() {
@@ -218,6 +298,7 @@ public class GamePageController implements Initializable {
 
         startGameLoop();
         startGenerateMusuh();
+        startGenerateMangsa();
     } catch (IOException e) {
         e.printStackTrace();
     }
@@ -260,6 +341,7 @@ public class GamePageController implements Initializable {
         ruang.requestFocus();
         ruang.getChildren().remove(tapToPlayLabel);
         startGenerateMusuh();
+        startGenerateMangsa();
     }
     
 }
